@@ -79,15 +79,39 @@ function renderGraph(data) {
         } : {
             barnesHut: { gravitationalConstant: -4000, springLength: 160 },
         },
-        layout: hierarchical ? {
-            hierarchical: {
-                direction: 'UD',
-                sortMethod: 'directed',
-                levelSeparation: 140,
-                nodeSpacing: 180,
-                treeSpacing: 200,
-            },
-        } : {},
+        physics: hierarchical ? {
+    enabled: false,
+} : {
+    enabled: true,
+    barnesHut: {
+        gravitationalConstant: -8000,    // ⬅️ сильнее отталкивание (было -4000)
+        centralGravity: 0.1,
+        springLength: 300,               // ⬅️ длиннее связи (было 160)
+        springConstant: 0.02,
+        damping: 0.3,
+        avoidOverlap: 0.5,               // ⬅️ узлы не налезают друг на друга
+    },
+    stabilization: {
+        enabled: true,
+        iterations: 500,
+        updateInterval: 25,
+    },
+},
+layout: hierarchical ? {
+    hierarchical: {
+        direction: 'UD',
+        sortMethod: 'directed',
+        levelSeparation: 280,
+        nodeSpacing: 500,
+        treeSpacing: 500,
+        edgeMinimization: true,
+        blockShifting: true,
+        parentCentralization: true,
+        improvedLayout: true,
+    },
+} : {
+    randomSeed: 42,
+},
         interaction: {
             hover: true,
             tooltipDelay: 150,
