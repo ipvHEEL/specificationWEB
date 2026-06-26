@@ -80,14 +80,18 @@ function renderGraph(data) {
             barnesHut: { gravitationalConstant: -4000, springLength: 160 },
         },
         layout: hierarchical ? {
-            hierarchical: {
-                direction: 'UD',
-                sortMethod: 'directed',
-                levelSeparation: 140,
-                nodeSpacing: 180,
-                treeSpacing: 200,
-            },
-        } : {},
+    hierarchical: {
+        enabled: true,
+        direction: 'UD',  // Возвращаем сверху вниз
+        sortMethod: 'directed',
+        levelSeparation: 500,  // Увеличиваем расстояние между уровнями
+        nodeSpacing: 500,      // ⬅️ УВЕЛИЧИВАЕМ расстояние между узлами
+        treeSpacing: 150,      // Расстояние между деревьями
+        blockShifting: true,   // Сдвигает блоки для лучшей компоновки
+        edgeMinimization: true, // Минимизирует пересечения
+        parentCentralization: true, // Центрирует родителей
+    },
+} : {},
         interaction: {
             hover: true,
             tooltipDelay: 150,
