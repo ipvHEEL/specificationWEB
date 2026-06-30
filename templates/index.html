@@ -2,8 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>BOM Graph Viewer</title>
-    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <title>BOM Iris Viewer</title>
     <style>
         * { box-sizing: border-box; }
         body { margin: 0; font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: #f5f7fa; }
@@ -28,12 +27,37 @@
         .sugg-item .code { font-weight: 600; color: #1f2937; }
         .sugg-item .name { color: #6b7280; font-size: 12px; display: block; margin-top: 2px; }
 
-        #graph { width: 100%; height: calc(100vh - 120px); background: white; }
+        #graph {
+            width: 100%; height: calc(100vh - 124px); min-height: 620px;
+            background:
+                radial-gradient(circle at center, rgba(59,130,246,.08), transparent 34%),
+                linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            overflow: hidden;
+        }
+        .iris-svg { width: 100%; height: 100%; display: block; }
+        .iris-background { fill: #f8fafc; stroke: #e2e8f0; stroke-width: 1; }
+        .iris-segment {
+            cursor: pointer; stroke: #ffffff; stroke-width: 2;
+            filter: url(#segmentShadow); transition: opacity .16s ease, transform .16s ease, stroke-width .16s ease;
+            transform-box: fill-box; transform-origin: center;
+        }
+        .iris-segment:hover { opacity: 1 !important; stroke-width: 4; transform: scale(1.012); }
+        .iris-segment.is-selected { opacity: 1 !important; stroke: #111827; stroke-width: 4; }
+        .iris-label {
+            pointer-events: none; fill: #111827; font-size: 11px; font-weight: 700;
+            paint-order: stroke; stroke: rgba(255,255,255,.88); stroke-width: 3px; stroke-linejoin: round;
+        }
+        .iris-label.is-selected-label { fill: #000; font-size: 12px; }
+        .iris-center { cursor: pointer; filter: url(#segmentShadow); }
+        .iris-center circle { stroke: #ffffff; stroke-width: 5; }
+        .center-code { fill: white; font-size: 16px; font-weight: 800; }
+        .center-name { fill: rgba(255,255,255,.92); font-size: 12px; font-weight: 600; }
 
         .toolbar {
             padding: 8px 20px; background: #fff; border-bottom: 1px solid #e5e7eb;
             display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
         }
+        .graph-stats { font-size: 12px; color: #475569; }
         .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; }
         .legend span {
             display: inline-flex; align-items: center; gap: 6px;
@@ -46,14 +70,16 @@
         }
         button:hover { background: #f3f4f6; }
         #info {
-            position: absolute; right: 20px; top: 140px; width: 320px;
+            position: absolute; right: 20px; top: 144px; width: 360px;
             background: white; border-radius: 8px; padding: 14px;
             box-shadow: 0 4px 16px rgba(0,0,0,.1); font-size: 13px;
             display: none; max-height: 70vh; overflow-y: auto;
         }
         #info h3 { margin: 0 0 8px; font-size: 14px; }
-        #info .row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #eee; }
+        #info .row { display: grid; grid-template-columns: 112px 1fr; gap: 10px; padding: 5px 0; border-bottom: 1px dashed #eee; }
         #info .row b { color: #6b7280; font-weight: 500; }
+        #info .row span { overflow-wrap: anywhere; text-align: right; }
+        #info button { margin-top: 12px; width: 100%; }
         #loader {
             position: fixed; inset: 0; background: rgba(255,255,255,.7);
             display: none; align-items: center; justify-content: center; z-index: 100;
@@ -68,7 +94,7 @@
 <body>
 
 <header>
-    <h1>🌳 BOM Graph Viewer</h1>
+    <h1>🌈 BOM Iris Viewer</h1>
     <div class="search-box">
         <input id="searchInput" type="text" placeholder="Введите код или название спецификации..." autocomplete="off">
         <div id="suggestions"></div>
@@ -76,9 +102,9 @@
 </header>
 
 <div class="toolbar">
-    <button id="btnFit">⤢ Вписать</button>
-    <button id="btnHierarchical">⇅ Иерархия вкл/выкл</button>
-    <button id="btnExport">⬇ Экспорт PNG</button>
+    <button id="btnFit">⤢ Перерисовать</button>
+    <button id="btnExport">⬇ Экспорт SVG</button>
+    <span id="graphStats" class="graph-stats">Выберите спецификацию для построения ирис-диаграммы</span>
     <div class="legend">
         <span><i style="background:#F44336"></i>ГП</span>
         <span><i style="background:#AB47BC"></i>ПФ</span>
