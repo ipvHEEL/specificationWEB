@@ -10,7 +10,7 @@ from collections import defaultdict
 from database import get_db
 from models import SpecificationMaterialExplosion, SpecificationMaterialExplosionPf
 
-app = FastAPI(title="BOM Graph Viewer")
+app = FastAPI(title="BOM Iris Viewer")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
