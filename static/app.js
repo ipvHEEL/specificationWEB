@@ -67,61 +67,79 @@ async function loadGraph(bomItem) {
 function renderIrisDiagram(tree) {
     graphEl.innerHTML = '';
 
-    const width = Math.max(graphEl.clientWidth, 900);
-    const height = Math.max(graphEl.clientHeight, 650);
-    const radius = Math.max(180, Math.min(width, height) / 2 - RADIAL_MARGIN);
-
     const root = d3.hierarchy(tree);
-    const leaves = Math.max(1, root.leaves().length);
-    const separation = (a, b) => (a.parent === b.parent ? 1 : 1.8) / Math.max(1, a.depth);
-    d3.cluster().size([2 * Math.PI, radius]).separation(separation)(root);
+    const nodeWidth = 168;
+    const nodeHeight = 58;
+    const skew = 18;
+    const horizontalGap = 62;
+    const verticalGap = 112;
+
+    d3.tree()
+        .nodeSize([nodeWidth + horizontalGap, nodeHeight + verticalGap])
+        .separation((a, b) => (a.parent === b.parent ? 1 : 1.25))(root);
+
+    const nodes = root.descendants();
+    const minX = d3.min(nodes, d => d.x) || 0;
+    const maxX = d3.max(nodes, d => d.x) || 0;
+    const maxY = d3.max(nodes, d => d.y) || 0;
+    const padding = { top: 70, right: 120, bottom: 90, left: 120 };
+    const width = Math.max(graphEl.clientWidth, maxX - minX + padding.left + padding.right + nodeWidth);
+    const height = Math.max(graphEl.clientHeight, maxY + padding.top + padding.bottom + nodeHeight);
+    const offsetX = width / 2 - (minX + maxX) / 2;
+    const offsetY = padding.top;
 
     const svg = d3.select(graphEl)
         .append('svg')
-        .attr('class', 'iris-svg')
-        .attr('viewBox', [-width / 2, -height / 2, width, height])
+        .attr('class', 'iris-svg flow-svg')
+        .attr('viewBox', [0, 0, width, height])
         .attr('width', '100%')
         .attr('height', '100%');
 
-    const viewport = svg.append('g').attr('class', 'iris-viewport');
+    const grid = svg.append('defs').append('pattern')
+        .attr('id', 'flow-grid')
+        .attr('width', 18)
+        .attr('height', 18)
+        .attr('patternUnits', 'userSpaceOnUse');
+    grid.append('circle')
+        .attr('cx', 1)
+        .attr('cy', 1)
+        .attr('r', 1.2)
+        .attr('fill', '#b7c3d7')
+        .attr('opacity', 0.55);
 
+    svg.append('rect')
+        .attr('width', width)
+        .attr('height', height)
+        .attr('fill', 'url(#flow-grid)');
+
+    const viewport = svg.append('g').attr('class', 'iris-viewport');
     const zoom = d3.zoom()
-        .scaleExtent([0.25, 4])
+        .scaleExtent([0.35, 2.8])
         .on('zoom', event => viewport.attr('transform', event.transform));
     svg.call(zoom);
 
-    viewport.append('g')
-        .attr('class', 'iris-rings')
-        .selectAll('circle')
-        .data(d3.range(1, root.height + 1))
-        .join('circle')
-        .attr('r', d => (radius / Math.max(1, root.height + 1)) * d)
-        .attr('fill', 'none')
-        .attr('stroke', '#e5e7eb')
-        .attr('stroke-dasharray', '4 8');
-
-    const link = d3.linkRadial()
-        .angle(d => d.x)
-        .radius(d => d.y);
+    const nodeX = d => d.x + offsetX;
+    const nodeY = d => d.y + offsetY;
 
     viewport.append('g')
-        .attr('class', 'iris-links')
+        .attr('class', 'flow-links')
         .selectAll('path')
         .data(root.links())
         .join('path')
-        .attr('d', link)
-        .attr('stroke', d => colorFor(d.target.data.type, '#94a3b8'))
-        .attr('stroke-width', d => Math.max(1.4, 3.2 - d.target.depth * 0.25))
-        .attr('stroke-opacity', 0.55)
+        .attr('d', d => flowLinkPath(d, nodeX, nodeY, nodeWidth, nodeHeight))
+        .attr('stroke', '#424242')
+        .attr('stroke-width', 2.2)
+        .attr('stroke-linejoin', 'round')
+        .attr('stroke-linecap', 'round')
         .attr('fill', 'none');
 
     const node = viewport.append('g')
-        .attr('class', 'iris-nodes')
+        .attr('class', 'iris-nodes flow-nodes')
         .selectAll('g')
-        .data(root.descendants())
+        .data(nodes)
         .join('g')
-        .attr('class', d => `iris-node depth-${d.depth}`)
-        .attr('transform', d => `rotate(${d.x * 180 / Math.PI - 90}) translate(${d.y},0)`)
+        .attr('class', d => `iris-node flow-node depth-${d.depth}`)
+        .attr('transform', d => `translate(${nodeX(d) - nodeWidth / 2},${nodeY(d) - nodeHeight / 2})`)
         .on('click', (event, d) => {
             selectedNode = d;
             showInfo(d.data, d);
@@ -133,29 +151,72 @@ function renderIrisDiagram(tree) {
             if (d.data.expandable || (d.children && d.children.length)) loadGraph(d.data.id);
         });
 
-    node.append('circle')
-        .attr('r', d => d.depth === 0 ? 18 : Math.max(6, 13 - d.depth))
-        .attr('fill', d => colorFor(d.data.type))
-        .attr('stroke', '#ffffff')
-        .attr('stroke-width', 2.5);
+    node.append('polygon')
+        .attr('points', `0,0 ${nodeWidth},0 ${nodeWidth - skew},${nodeHeight} ${-skew},${nodeHeight}`)
+        .attr('fill', d => flowFill(d.data.type, d.depth))
+        .attr('stroke', d => d.depth === 0 ? '#2f7d22' : '#48a935')
+        .attr('stroke-width', d => d.depth === 0 ? 3 : 2)
+        .attr('filter', 'drop-shadow(4px 5px 3px rgba(15, 23, 42, .22))');
+
+    node.append('polygon')
+        .attr('points', `${nodeWidth - 28},5 ${nodeWidth - 4},5 ${nodeWidth - skew - 4},${nodeHeight - 5} ${nodeWidth - skew - 28},${nodeHeight - 5}`)
+        .attr('fill', '#7ed957')
+        .attr('opacity', 0.42);
 
     node.append('text')
-        .attr('dy', '0.32em')
-        .attr('x', d => d.x < Math.PI === !d.children ? 14 : -14)
-        .attr('text-anchor', d => d.x < Math.PI === !d.children ? 'start' : 'end')
-        .attr('transform', d => d.x >= Math.PI ? 'rotate(180)' : null)
-        .text(d => labelFor(d.data, d.depth, leaves))
-        .append('title')
+        .attr('x', nodeWidth / 2 - skew / 2)
+        .attr('y', nodeHeight / 2 - 7)
+        .attr('text-anchor', 'middle')
+        .selectAll('tspan')
+        .data(d => wrapLabel(labelFor(d.data, d.depth, root.leaves().length), d.depth === 0 ? 22 : 18))
+        .join('tspan')
+        .attr('x', nodeWidth / 2 - skew / 2)
+        .attr('dy', (_, i) => i === 0 ? 0 : 13)
+        .text(d => d);
+
+    node.append('title')
         .text(d => `${d.data.id} — ${d.data.name || ''}`);
 
     svg.append('g')
-        .attr('class', 'iris-center-label')
+        .attr('class', 'iris-center-label flow-title')
         .append('text')
-        .attr('text-anchor', 'middle')
-        .attr('y', height / 2 - 34)
+        .attr('x', 24)
+        .attr('y', 30)
         .text(`${tree.id} · ${tree.name || 'Спецификация'}`);
 
     showStats(root);
+}
+
+function flowLinkPath(d, nodeX, nodeY, nodeWidth, nodeHeight) {
+    const sx = nodeX(d.source);
+    const sy = nodeY(d.source) + nodeHeight / 2;
+    const tx = nodeX(d.target);
+    const ty = nodeY(d.target) - nodeHeight / 2;
+    const midY = sy + Math.max(26, (ty - sy) / 2);
+    return `M${sx},${sy} V${midY} H${tx} V${ty}`;
+}
+
+function flowFill(type, depth) {
+    if (depth === 0) return '#8bdc53';
+    const color = d3.color(colorFor(type, '#74c947')) || d3.color('#74c947');
+    return color.brighter(0.35).formatHex();
+}
+
+function wrapLabel(text, maxChars) {
+    const words = String(text || '').split(/\s+/).filter(Boolean);
+    const lines = [];
+    let line = '';
+    words.forEach(word => {
+        const next = line ? `${line} ${word}` : word;
+        if (next.length > maxChars && line) {
+            lines.push(line);
+            line = word;
+        } else {
+            line = next;
+        }
+    });
+    if (line) lines.push(line);
+    return lines.slice(0, 3).map((part, index, arr) => index === 2 && arr.length === 3 && words.join(' ').length > arr.join(' ').length ? `${part.slice(0, maxChars - 1)}…` : part);
 }
 
 function labelFor(data, depth, leaves) {

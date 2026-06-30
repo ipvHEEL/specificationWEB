@@ -29,15 +29,15 @@
         .sugg-item .code { font-weight: 600; color: #1f2937; }
         .sugg-item .name { color: #6b7280; font-size: 12px; display: block; margin-top: 2px; }
 
-        #graph { width: 100%; height: calc(100vh - 128px); background: radial-gradient(circle at center, #ffffff 0, #f8fafc 72%); overflow: hidden; }
+        #graph { width: 100%; height: calc(100vh - 128px); background: #f8fafc; overflow: hidden; }
         .iris-svg { display: block; cursor: grab; }
         .iris-svg:active { cursor: grabbing; }
         .iris-node { cursor: pointer; }
-        .iris-node circle { filter: drop-shadow(0 2px 4px rgba(15, 23, 42, .16)); transition: stroke .15s, stroke-width .15s, r .15s; }
-        .iris-node:hover circle, .iris-node.selected circle { stroke: #0f172a; stroke-width: 4; }
-        .iris-node text { font-size: 11px; fill: #111827; paint-order: stroke; stroke: rgba(255,255,255,.92); stroke-width: 4px; stroke-linejoin: round; font-weight: 600; }
-        .iris-node.depth-0 text { font-size: 13px; font-weight: 800; }
-        .iris-center-label text { fill: #475569; font-size: 12px; font-weight: 700; }
+        .flow-node polygon { transition: stroke .15s, stroke-width .15s, filter .15s; }
+        .flow-node:hover polygon:first-child, .flow-node.selected polygon:first-child { stroke: #163b12; stroke-width: 4; filter: drop-shadow(6px 8px 5px rgba(15, 23, 42, .32)); }
+        .flow-node text { font-size: 11px; fill: #10220d; font-weight: 800; pointer-events: none; }
+        .flow-node.depth-0 text { font-size: 12px; }
+        .flow-title text { fill: #475569; font-size: 13px; font-weight: 800; }
 
         .toolbar {
             padding: 8px 20px; background: #fff; border-bottom: 1px solid #e5e7eb;
@@ -83,7 +83,7 @@
 
 <header>
     <h1>🌸 BOM Iris Viewer</h1>
-    <span class="subtitle">радиальная диаграмма спецификаций</span>
+    <span class="subtitle">блочная iris-схема спецификаций</span>
     <div class="search-box">
         <input id="searchInput" type="text" placeholder="Введите код или название спецификации..." autocomplete="off">
         <div id="suggestions"></div>
@@ -93,7 +93,7 @@
 <div class="toolbar">
     <button id="btnFit">⤢ Сбросить масштаб</button>
     <button id="btnExport">⬇ Экспорт SVG</button>
-    <div id="graphStats">Выберите спецификацию для построения iris-диаграммы</div>
+    <div id="graphStats">Выберите спецификацию для построения блочной iris-схемы</div>
     <div class="legend">
         <span><i style="background:#F44336"></i>ГП</span>
         <span><i style="background:#AB47BC"></i>ПФ</span>
@@ -107,6 +107,6 @@
 <div id="info"></div>
 <div id="loader"><div class="spinner"></div></div>
 
-<script src="/static/app.js?v=iris-20260630-2"></script>
+<script src="/static/app.js?v=iris-flow-20260630-3"></script>
 </body>
 </html>
