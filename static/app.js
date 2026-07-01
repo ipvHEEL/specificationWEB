@@ -10,6 +10,11 @@ const loader = document.getElementById('loader');
 
 const RADIAL_MARGIN = 140;
 const LABEL_LIMIT = 34;
+const ZOOM_MIN = 0.06;
+const ZOOM_MAX = 8;
+const ZOOM_STEP = 1.35;
+let graphZoom = null;
+let graphSvg = null;
 
 // ---------- Поиск с автодополнением ----------
 let searchTimer;
@@ -113,10 +118,12 @@ function renderIrisDiagram(tree) {
         .attr('fill', 'url(#flow-grid)');
 
     const viewport = svg.append('g').attr('class', 'iris-viewport');
-    const zoom = d3.zoom()
-        .scaleExtent([0.35, 2.8])
+    graphSvg = svg;
+    graphZoom = d3.zoom()
+        .scaleExtent([ZOOM_MIN, ZOOM_MAX])
         .on('zoom', event => viewport.attr('transform', event.transform));
-    svg.call(zoom);
+    svg.call(graphZoom);
+    applyInitialZoom(svg, graphZoom, width, height);
 
     const nodeX = d => d.x + offsetX;
     const nodeY = d => d.y + offsetY;
@@ -273,8 +280,29 @@ function focusNode(id) {
     }
 }
 
+function applyInitialZoom(svg, zoom, width, height) {
+    const graphWidth = graphEl.clientWidth || width;
+    const graphHeight = graphEl.clientHeight || height;
+    const scale = Math.max(ZOOM_MIN, Math.min(1, (Math.min(graphWidth / width, graphHeight / height) * 0.96)));
+    const translateX = (graphWidth - width * scale) / 2;
+    const translateY = Math.max(8, (graphHeight - height * scale) / 2);
+    svg.call(zoom.transform, d3.zoomIdentity.translate(translateX, translateY).scale(scale));
+}
+
+function zoomBy(factor) {
+    if (!graphSvg || !graphZoom) return;
+    graphSvg.transition().duration(180).call(graphZoom.scaleBy, factor);
+}
+
+function resetZoom() {
+    if (!currentTree) return;
+    renderIrisDiagram(currentTree);
+}
+
 // ---------- Кнопки ----------
-document.getElementById('btnFit').onclick = () => currentTree && renderIrisDiagram(currentTree);
+document.getElementById('btnFit').onclick = resetZoom;
+document.getElementById('btnZoomOut').onclick = () => zoomBy(1 / ZOOM_STEP);
+document.getElementById('btnZoomIn').onclick = () => zoomBy(ZOOM_STEP);
 document.getElementById('btnExport').onclick = () => {
     const svg = graphEl.querySelector('svg');
     if (!svg) return;
