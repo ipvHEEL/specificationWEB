@@ -44,6 +44,7 @@
             display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
         }
         .legend, #graphStats, .type-stats { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; align-items: center; }
+        .zoom-hint { color: #64748b; font-size: 12px; }
         #graphStats { margin-left: 0; color: #475569; font-size: 12px; }
         .type-stats { margin-left: 8px; }
         .legend span, #graphStats span {
@@ -91,7 +92,10 @@
 </header>
 
 <div class="toolbar">
-    <button id="btnFit">⤢ Сбросить масштаб</button>
+    <button id="btnFit">⤢ Показать всё</button>
+    <button id="btnZoomOut">− Отдалить</button>
+    <button id="btnZoomIn">+ Приблизить</button>
+    <span class="zoom-hint">Колесо мыши: масштаб 6–800%</span>
     <button id="btnExport">⬇ Экспорт SVG</button>
     <div id="graphStats">Выберите спецификацию для построения блочной iris-схемы</div>
     <div class="legend">
@@ -107,6 +111,6 @@
 <div id="info"></div>
 <div id="loader"><div class="spinner"></div></div>
 
-<script src="/static/app.js?v=iris-flow-20260630-3"></script>
+<script src="/static/app.js?v=iris-flow-20260701-zoom"></script>
 </body>
 </html>
