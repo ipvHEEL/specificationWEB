@@ -6,9 +6,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import String
 from typing import List, Optional
 from collections import defaultdict
+import time
 
 from database import get_db
-from models import SpecificationMaterialExplosion, SpecificationMaterialExplosionPf
+from models import SpecificationMaterialExplosion, SpecificationMaterialExplosionPf, specification_variant_and_versions
 
 app = FastAPI(title="BOM Iris Viewer")
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -191,6 +192,17 @@ def debug_tree(bom_item: str, db: Session = Depends(get_db)):
         "duplicates": duplicates,  # ← ключевая информация!
     }
 
+@app.get("/api/specifications/vaiant/{bom_item}")
+def get_variant_bom(bom_item: str, db: Session = Depends(get_db)):
+    bom_item_str = str(bom_item)
+
+    rows = db.query(specification_variant_and_versions)
+    result = []
+    # for row in rows:
+    #     result.append(row)
+    # print(result)
+    return {"oker" : rows}
+
 @app.get("/api/bom-tree/{bom_item}")
 def get_bom_tree(bom_item: str, db: Session = Depends(get_db)):
     bom_item_str = str(bom_item)
@@ -271,22 +283,29 @@ def get_bom_graph(bom_item: str, db: Session = Depends(get_db)):
 @app.get("/api/bom-list")
 def list_bom(db: Session = Depends(get_db)):
     items = []
+
+    #start sql
     for model in (SpecificationMaterialExplosion, SpecificationMaterialExplosionPf):
+        # start sqlORM
         rows = (
             db.query(model.BOM_ITEM, model.BOM_NAME)
             .distinct()
             .all()
         )
+        #end sqlORM 2.969244956970215
         for r in rows:
             items.append({
                 "bom_item": r.BOM_ITEM.strip() if hasattr(r.BOM_ITEM, 'strip') else str(r.BOM_ITEM),
                 "bom_name": (r.BOM_NAME or "").strip() if r.BOM_NAME else "",
             })
-    
+        
+    #end  sql 3.2588860988616943 sec
+    #start python 
     seen = set()
     unique = []
     for it in items:
         if it["bom_item"] not in seen:
             seen.add(it["bom_item"])
             unique.append(it)
+    #end python 0.0007236003875732422
     return unique

@@ -46,3 +46,10 @@ class SpecificationMaterialExplosionPf(Base):
     COMP_QNT = Column(Numeric)
     COMP_EXPLOSION = Column(Integer)
     COMP_WITHDRAWAL = Column(Numeric)
+
+class specification_variant_and_versions(Base):
+    __tablename__ = "specification_variant_and_versions"
+    ID = Column(String, primary_key=True)
+    KA2455_REZ_NR = Column(String)
+    KA2455_VAR_NR = Column(Integer)
+    KA2455_REZ_OBJ_NR = Column(String)
