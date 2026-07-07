@@ -9,7 +9,7 @@ from collections import defaultdict
 import time
 
 from database import get_db
-from models import SpecificationMaterialExplosion, SpecificationMaterialExplosionPf, specification_variant_and_versions
+from models import SpecificationMaterialExplosion, SpecificationMaterialExplosionPf, specification_variant_and_versions, Cache_data_from_all_spec
 
 app = FastAPI(title="BOM Iris Viewer")
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -49,26 +49,25 @@ def search_bom(
     results = []
     seen = set()
 
-    for model, source in (
-        (SpecificationMaterialExplosion, "explosion"),
-        (SpecificationMaterialExplosionPf, "explosion_pf"),
+    for model in (
+        (Cache_data_from_all_spec),
     ):
         rows = (
             db.query(model)
             .filter(
                 (model.BOM_ITEM.cast(String).ilike(like)) | (model.BOM_NAME.ilike(like))
             )
+            # .limit(10)
             .all()
         )
         for r in rows:
-            key = (str(r.BOM_ITEM), source)
+            key = (str(r.BOM_ITEM))
             if key in seen:
                 continue
             seen.add(key)
             results.append({
                 "bom_item": str(r.BOM_ITEM).strip(),
                 "bom_name": str(r.BOM_NAME).strip() if r.BOM_NAME else "",
-                "source": source,
                 "bom_var": r.BOM_VAR,
             })
     return results[:50]
