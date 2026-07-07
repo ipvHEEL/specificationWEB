@@ -45,6 +45,9 @@ class Cache_data_from_all_spec(Base):
     COMP_EXPLOSION = Column(Integer)
     COMP_WITHDRAWAL = Column(Numeric)
 
+# class specification_variant_and_versions_web(Base):
+#     __tablename__ = "specification_variant_and_versions_web"
+    
 class SpecificationMaterialExplosionPf(Base):
     """Полуфабрикаты (сырьё, вложенные ПФ)"""
     __tablename__ = "specification_material_explosion_pf"

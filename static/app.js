@@ -184,12 +184,11 @@ function renderIrisDiagram(tree) {
     node.append('title')
         .text(d => `${d.data.id} — ${d.data.name || ''}`);
 
-    svg.append('g')
-        .attr('class', 'iris-center-label flow-title')
-        .append('text')
-        .attr('x', 24)
-        .attr('y', 30)
-        .text(`${tree.id} · ${tree.name || 'Спецификация'}`);
+    // svg.append('g')
+    //     .append('text')
+    //     .attr('x', 24)
+    //     .attr('y', 30)
+    //     .text(`${tree.id} · ${tree.name || 'Спецификация'}`);
 
     showStats(root);
 }
