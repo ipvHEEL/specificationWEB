@@ -10,6 +10,12 @@ const loader = document.getElementById('loader');
 
 const RADIAL_MARGIN = 140;
 const LABEL_LIMIT = 34;
+const ZOOM_MIN = 0.06;
+const ZOOM_MAX = 8;
+const ZOOM_STEP = 1.35;
+let graphZoom = null;
+let graphSvg = null;
+let graphOrientation = 'vertical';
 
 // ---------- Поиск с автодополнением ----------
 let searchTimer;
@@ -73,9 +79,12 @@ function renderIrisDiagram(tree) {
     const skew = 18;
     const horizontalGap = 62;
     const verticalGap = 112;
+    const isHorizontal = graphOrientation === 'horizontal';
 
     d3.tree()
-        .nodeSize([nodeWidth + horizontalGap, nodeHeight + verticalGap])
+        .nodeSize(isHorizontal
+            ? [nodeHeight + verticalGap, nodeWidth + horizontalGap]
+            : [nodeWidth + horizontalGap, nodeHeight + verticalGap])
         .separation((a, b) => (a.parent === b.parent ? 1 : 1.25))(root);
 
     const nodes = root.descendants();
@@ -83,10 +92,20 @@ function renderIrisDiagram(tree) {
     const maxX = d3.max(nodes, d => d.x) || 0;
     const maxY = d3.max(nodes, d => d.y) || 0;
     const padding = { top: 70, right: 120, bottom: 90, left: 120 };
-    const width = Math.max(graphEl.clientWidth, maxX - minX + padding.left + padding.right + nodeWidth);
-    const height = Math.max(graphEl.clientHeight, maxY + padding.top + padding.bottom + nodeHeight);
-    const offsetX = width / 2 - (minX + maxX) / 2;
-    const offsetY = padding.top;
+    const width = Math.max(
+        graphEl.clientWidth,
+        isHorizontal
+            ? maxY + padding.left + padding.right + nodeWidth
+            : maxX - minX + padding.left + padding.right + nodeWidth
+    );
+    const height = Math.max(
+        graphEl.clientHeight,
+        isHorizontal
+            ? maxX - minX + padding.top + padding.bottom + nodeHeight
+            : maxY + padding.top + padding.bottom + nodeHeight
+    );
+    const offsetX = isHorizontal ? padding.left : width / 2 - (minX + maxX) / 2;
+    const offsetY = isHorizontal ? height / 2 - (minX + maxX) / 2 : padding.top;
 
     const svg = d3.select(graphEl)
         .append('svg')
@@ -113,20 +132,22 @@ function renderIrisDiagram(tree) {
         .attr('fill', 'url(#flow-grid)');
 
     const viewport = svg.append('g').attr('class', 'iris-viewport');
-    const zoom = d3.zoom()
-        .scaleExtent([0.35, 2.8])
+    graphSvg = svg;
+    graphZoom = d3.zoom()
+        .scaleExtent([ZOOM_MIN, ZOOM_MAX])
         .on('zoom', event => viewport.attr('transform', event.transform));
-    svg.call(zoom);
+    svg.call(graphZoom);
+    applyInitialZoom(svg, graphZoom, width, height);
 
-    const nodeX = d => d.x + offsetX;
-    const nodeY = d => d.y + offsetY;
+    const nodeX = d => (isHorizontal ? d.y + offsetX : d.x + offsetX);
+    const nodeY = d => (isHorizontal ? d.x + offsetY : d.y + offsetY);
 
     viewport.append('g')
         .attr('class', 'flow-links')
         .selectAll('path')
         .data(root.links())
         .join('path')
-        .attr('d', d => flowLinkPath(d, nodeX, nodeY, nodeWidth, nodeHeight))
+        .attr('d', d => flowLinkPath(d, nodeX, nodeY, nodeWidth, nodeHeight, isHorizontal))
         .attr('stroke', '#424242')
         .attr('stroke-width', 2.2)
         .attr('stroke-linejoin', 'round')
@@ -187,13 +208,23 @@ function renderIrisDiagram(tree) {
     showStats(root);
 }
 
-function flowLinkPath(d, nodeX, nodeY, nodeWidth, nodeHeight) {
+function flowLinkPath(d, nodeX, nodeY, nodeWidth, nodeHeight, isHorizontal) {
     const sx = nodeX(d.source);
-    const sy = nodeY(d.source) + nodeHeight / 2;
+    const sy = nodeY(d.source);
     const tx = nodeX(d.target);
-    const ty = nodeY(d.target) - nodeHeight / 2;
-    const midY = sy + Math.max(26, (ty - sy) / 2);
-    return `M${sx},${sy} V${midY} H${tx} V${ty}`;
+    const ty = nodeY(d.target);
+
+    if (isHorizontal) {
+        const startX = sx + nodeWidth / 2;
+        const endX = tx - nodeWidth / 2;
+        const midX = startX + Math.max(34, (endX - startX) / 2);
+        return `M${startX},${sy} H${midX} V${ty} H${endX}`;
+    }
+
+    const startY = sy + nodeHeight / 2;
+    const endY = ty - nodeHeight / 2;
+    const midY = startY + Math.max(26, (endY - startY) / 2);
+    return `M${sx},${startY} V${midY} H${tx} V${endY}`;
 }
 
 function flowFill(type, depth) {
@@ -273,8 +304,45 @@ function focusNode(id) {
     }
 }
 
+function applyInitialZoom(svg, zoom, width, height) {
+    const graphWidth = graphEl.clientWidth || width;
+    const graphHeight = graphEl.clientHeight || height;
+    const scale = Math.max(ZOOM_MIN, Math.min(1, (Math.min(graphWidth / width, graphHeight / height) * 0.96)));
+    const translateX = (graphWidth - width * scale) / 2;
+    const translateY = Math.max(8, (graphHeight - height * scale) / 2);
+    svg.call(zoom.transform, d3.zoomIdentity.translate(translateX, translateY).scale(scale));
+}
+
+function zoomBy(factor) {
+    if (!graphSvg || !graphZoom) return;
+    graphSvg.transition().duration(180).call(graphZoom.scaleBy, factor);
+}
+
+function resetZoom() {
+    if (!currentTree) return;
+    renderIrisDiagram(currentTree);
+}
+
+function toggleOrientation() {
+    graphOrientation = graphOrientation === 'vertical' ? 'horizontal' : 'vertical';
+    updateOrientationButton();
+    if (currentTree) renderIrisDiagram(currentTree);
+}
+
+function updateOrientationButton() {
+    const btn = document.getElementById('btnOrientation');
+    if (!btn) return;
+    btn.textContent = graphOrientation === 'vertical'
+        ? '↔ Горизонтально'
+        : '↕ Вертикально';
+}
+
 // ---------- Кнопки ----------
-document.getElementById('btnFit').onclick = () => currentTree && renderIrisDiagram(currentTree);
+document.getElementById('btnFit').onclick = resetZoom;
+document.getElementById('btnOrientation').onclick = toggleOrientation;
+updateOrientationButton();
+document.getElementById('btnZoomOut').onclick = () => zoomBy(1 / ZOOM_STEP);
+document.getElementById('btnZoomIn').onclick = () => zoomBy(ZOOM_STEP);
 document.getElementById('btnExport').onclick = () => {
     const svg = graphEl.querySelector('svg');
     if (!svg) return;
