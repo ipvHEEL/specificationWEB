@@ -46,3 +46,24 @@ class SpecificationMaterialExplosionPf(Base):
     COMP_QNT = Column(Numeric)
     COMP_EXPLOSION = Column(Integer)
     COMP_WITHDRAWAL = Column(Numeric)
+
+
+class Cache_data_from_all_spec(Base):
+    __tablename__ = "Cache_data_from_all_spec"
+    BOM_ITEM = Column(String, primary_key=True)
+    BOM_PROD_KST_NR = Column(Integer)
+    BOM_VAR = Column(Integer)
+    BOM_NAME = Column(String)
+    BOM_ANL_DATUM = Column(Date)
+    BOM_UPD_DATUM = Column(Date)
+    COMP_ITEM = Column(String, primary_key=True)
+    SY0012_HOST_ART_NR = Column(String)
+    COMP_NAME = Column(String)
+    Type_Art = Column(String)
+    COMP_BYPROD = Column(Integer)
+    SY0012_EK_ME = Column(String)
+    COM_PU_ONE = Column(Numeric)
+    COMP_EK_KGME = Column(Numeric)
+    COMP_QNT = Column(Numeric)
+    COMP_EXPLOSION = Column(Integer)
+    COMP_WITHDRAWAL = Column(Numeric)
