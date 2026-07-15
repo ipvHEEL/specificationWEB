@@ -13,6 +13,8 @@
         }
         header h1 { font-size: 18px; margin: 0; }
         header .subtitle { color: #cbd5e1; font-size: 13px; }
+        .admin-link { color: #bfdbfe; font-size: 13px; text-decoration: none; }
+        .admin-link:hover { color: white; }
         .search-box { position: relative; flex: 1; min-width: 280px; max-width: 600px; }
         #searchInput {
             width: 100%; padding: 8px 12px; border-radius: 6px; border: none;
@@ -89,6 +91,7 @@
         <input id="searchInput" type="text" placeholder="Введите код или название спецификации..." autocomplete="off">
         <div id="suggestions"></div>
     </div>
+    <a class="admin-link" href="/admin">Админка</a>
 </header>
 
 <div class="toolbar">

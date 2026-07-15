@@ -10,3 +10,5 @@ DATABASE_URL = os.getenv(
     "?driver=ODBC+Driver+17+for+SQL+Server"
     "&TrustServerCertificate=yes"
 )
+
+VISIT_STATS_DB = os.getenv("VISIT_STATS_DB", "data/visit_stats.sqlite3")

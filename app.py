@@ -8,13 +8,37 @@ from typing import List, Optional
 from collections import defaultdict
 
 from database import get_db
-from models import SpecificationMaterialExplosion, SpecificationMaterialExplosionPf, Cache_data_from_all_spec 
+from models import SpecificationMaterialExplosion, SpecificationMaterialExplosionPf, Cache_data_from_all_spec
+from visit_stats import get_visit_stats, init_visit_stats, record_visit
 
 app = FastAPI(title="BOM Iris Viewer")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 MAX_DEPTH = 10  # Увеличили глубину рекурсии
+EXCLUDED_VISIT_PREFIXES = ("/static", "/favicon.ico")
+
+
+@app.on_event("startup")
+def startup() -> None:
+    init_visit_stats()
+
+
+@app.middleware("http")
+async def visit_stats_middleware(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if not path.startswith(EXCLUDED_VISIT_PREFIXES):
+        client_host = request.client.host if request.client else None
+        record_visit(
+            path=path,
+            method=request.method,
+            status_code=response.status_code,
+            client_host=client_host,
+            user_agent=request.headers.get("user-agent"),
+            referer=request.headers.get("referer"),
+        )
+    return response
 
 
 # ---------- Цветовая схема по типу ----------
@@ -37,6 +61,21 @@ def color_for(type_art: str) -> str:
 def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+
+
+
+# ---------- Админка со статистикой посещений ----------
+@app.get("/admin", response_class=HTMLResponse)
+def admin_dashboard(request: Request):
+    return templates.TemplateResponse(
+        "admin.html",
+        {"request": request, "stats": get_visit_stats()},
+    )
+
+
+@app.get("/api/admin/visits")
+def admin_visit_stats():
+    return get_visit_stats()
 
 # ---------- Поиск спецификаций ----------
 @app.get("/api/search")
