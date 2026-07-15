@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Админка · статистика посещений</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: #f5f7fa; color: #111827; }
+        header { background: #111827; color: #fff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+        h1 { margin: 0; font-size: 22px; }
+        a { color: #2563eb; text-decoration: none; }
+        header a { color: #bfdbfe; }
+        main { padding: 24px; display: grid; gap: 20px; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+        .card, section { background: white; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 4px 14px rgba(15, 23, 42, .06); }
+        .card { padding: 18px; }
+        .card b { display: block; font-size: 30px; margin-bottom: 4px; color: #1d4ed8; }
+        .card span { color: #6b7280; font-size: 13px; }
+        section { padding: 18px; overflow-x: auto; }
+        h2 { margin: 0 0 14px; font-size: 17px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 10px 12px; border-bottom: 1px solid #eef2f7; text-align: left; vertical-align: top; }
+        th { color: #475569; font-weight: 700; background: #f8fafc; }
+        .muted { color: #64748b; font-size: 12px; }
+        .path { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Админка · статистика посещений</h1>
+    <a href="/">← вернуться к BOM Iris Viewer</a>
+</header>
+<main>
+    <div class="cards">
+        <div class="card"><b>{{ stats.summary.total or 0 }}</b><span>всего посещений</span></div>
+        <div class="card"><b>{{ stats.summary.unique_hosts or 0 }}</b><span>уникальных хостов</span></div>
+        <div class="card"><b>{{ stats.summary.last_24h or 0 }}</b><span>за последние 24 часа</span></div>
+        <div class="card"><b>{{ stats.summary.last_7d or 0 }}</b><span>за последние 7 дней</span></div>
+    </div>
+
+    <section>
+        <h2>Популярные страницы</h2>
+        <table>
+            <thead><tr><th>Страница</th><th>Посещения</th></tr></thead>
+            <tbody>
+            {% for page in stats.top_pages %}
+                <tr><td class="path">{{ page.path }}</td><td>{{ page.visits }}</td></tr>
+            {% else %}
+                <tr><td colspan="2" class="muted">Данных пока нет.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>Динамика за 14 дней</h2>
+        <table>
+            <thead><tr><th>Дата UTC</th><th>Посещения</th><th>Уникальные хосты</th></tr></thead>
+            <tbody>
+            {% for day in stats.daily %}
+                <tr><td>{{ day.day }}</td><td>{{ day.visits }}</td><td>{{ day.unique_hosts }}</td></tr>
+            {% else %}
+                <tr><td colspan="3" class="muted">Данных пока нет.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>Последние визиты</h2>
+        <table>
+            <thead><tr><th>Время UTC</th><th>Метод</th><th>Статус</th><th>Страница</th><th>Хост</th><th>User-Agent</th></tr></thead>
+            <tbody>
+            {% for visit in stats.recent %}
+                <tr>
+                    <td>{{ visit.visited_at }}</td>
+                    <td>{{ visit.method }}</td>
+                    <td>{{ visit.status_code }}</td>
+                    <td class="path">{{ visit.path }}</td>
+                    <td>{{ visit.client_host or '—' }}</td>
+                    <td class="muted">{{ visit.user_agent or '—' }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="6" class="muted">Данных пока нет.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</main>
+</body>
+</html>
